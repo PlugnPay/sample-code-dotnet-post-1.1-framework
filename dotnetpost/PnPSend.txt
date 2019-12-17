@@ -1,0 +1,72 @@
+
+  Dim Url As String
+  Dim Pairs As String
+  Dim UserName As String
+  Dim Password As String
+  Dim Reply As String
+  Dim result As WebResponse
+  Try
+  Dim req As WebRequest
+  Dim RequestStream As Stream
+  Dim ReceiveStream As Stream
+  Dim encode As Encoding
+  Dim sr As StreamReader
+
+  Url = "https://pay1.plugnpay.com/payment/pnpremote.cgi"
+
+
+  req = WebRequest.Create(Url)
+  Dim myCache As New CredentialCache()
+
+  myCache.Add(New Uri(Url), "Basic", New NetworkCredential(UserName, Password))
+  req.Credentials = myCache
+  req.Method = "POST"
+  req.ContentType = "application/x-www-form-urlencoded"
+
+  Dim SomeBytes() As Byte
+  Dim UrlEncoded As New StringBuilder()
+  Dim reserved() As Char = {ChrW(63), ChrW(61), ChrW(38)}
+
+  If Pairs <> "" Then
+    Dim i As Integer = 0
+    Dim j As Integer
+    While i < Pairs.Length
+    j = Pairs.IndexOfAny(reserved, i)
+    If j = -1 Then
+    UrlEncoded.Append(HttpUtility.UrlEncode(Pairs.Substring(i, Pairs.Length - i)))
+    Exit While
+    End If
+    UrlEncoded.Append(HttpUtility.UrlEncode(Pairs.Substring(i, j - i)))
+    UrlEncoded.Append(Pairs.Substring(j, 1))
+    i = j + 1
+    End While
+    SomeBytes = System.Text.Encoding.UTF8.GetBytes(UrlEncoded.ToString())
+    req.ContentLength = SomeBytes.Length
+    RequestStream = req.GetRequestStream()
+    RequestStream.Write(SomeBytes, 0, SomeBytes.Length)
+    RequestStream.Close()
+  Else
+    req.ContentLength = 0
+  End If
+  result = req.GetResponse()
+  ReceiveStream = result.GetResponseStream()
+  encode = System.Text.Encoding.GetEncoding("utf-8")
+  sr = New StreamReader(ReceiveStream, encode)
+
+  Dim read(256) As Char
+  Dim count As Integer = sr.Read(read, 0, 256)
+  Do While count > 0
+    Dim str1 As String = New String(read, 0, count)
+    Reply += str1
+    count = sr.Read(read, 0, 256)
+  Loop
+  Catch Exc As Exception
+  Reply = "pnpcom_err=" & Exc.Message
+  Finally
+  If Not result Is Nothing Then
+    result.Close()
+  End If
+  End Try
+  . Reply contains result
+
+
